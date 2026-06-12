@@ -209,6 +209,7 @@ tbody tr:hover td { background: #FCFAF6; }
 
 .company-cell .co { font-family: var(--display); font-size: 14.5px; font-weight: 600; }
 .company-cell .ro { font-size: 12px; color: var(--text-2); margin-top: 1px; }
+.suggest-row { margin-top: 4px; }
 .suggest-badge {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 10.5px; font-family: var(--mono);
@@ -216,9 +217,21 @@ tbody tr:hover td { background: #FCFAF6; }
   background: var(--sand-dim);
   border-radius: 12px;
   padding: 2px 9px;
-  margin-top: 4px;
   cursor: pointer;
 }
+.mail-link { font-size: 10.5px; color: var(--sky-text); text-decoration: underline; margin-left: 7px; white-space: nowrap; }
+.suggest-reason { font-size: 10.5px; color: var(--text-3); font-style: italic; margin-top: 2px; max-width: 280px; }
+
+/* ── PRÓXIMOS ── */
+.upcoming { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; animation: fadeDown .5s .11s ease both; }
+.up-chip {
+  display: inline-flex; align-items: center; gap: 12px;
+  background: var(--sand-dim); color: var(--sand-text);
+  border-radius: 20px; padding: 7px 15px;
+  font-size: 12px; font-weight: 500;
+}
+.up-chip a { color: var(--sand-text); text-decoration: underline; }
+.gcal-link { display: inline-block; font-size: 11.5px; color: var(--sage-text); text-decoration: underline; margin-top: 6px; }
 
 /* STATUS BADGE */
 .badge {
@@ -412,7 +425,7 @@ tbody tr:hover td { background: #FCFAF6; }
   <div class="topbar">
     <div class="topbar-left">
       <div class="logo">Job<span>.</span>Track</div>
-      <div class="version">v2.1</div>
+      <div class="version">v2.2</div>
       <div class="sync-dot" id="sync-dot" title="Estado de sync"></div>
     </div>
     <div class="topbar-right">
@@ -443,6 +456,9 @@ tbody tr:hover td { background: #FCFAF6; }
     <button class="filter-chip" data-filter="Rejected">Rejected</button>
     <button class="filter-chip" data-filter="Ghosted">Ghosted</button>
   </div>
+
+  <!-- PRÓXIMOS (entrevistas) -->
+  <div class="upcoming" id="upcoming" style="display:none"></div>
 
   <!-- ADD FORM (desktop) -->
   <div class="add-form">
@@ -503,6 +519,11 @@ tbody tr:hover td { background: #FCFAF6; }
     <div class="modal-field"><label>URL / Link</label><input id="m-url" placeholder="https://..."></div>
     <div class="modal-field"><label>Contacto</label><input id="m-contact" placeholder="Nombre, LinkedIn..."></div>
     <div class="modal-field"><label>Salario esperado (MXN)</label><input id="m-salary" type="number" placeholder="0"></div>
+    <div class="modal-field">
+      <label>Fecha de entrevista</label>
+      <input id="m-interview" type="datetime-local">
+      <a id="m-gcal" class="gcal-link" target="_blank" rel="noopener" style="display:none">📅 Agendar en Google Calendar ↗</a>
+    </div>
     <div class="modal-field"><label>Notas</label><textarea id="m-notes" placeholder="Detalles, cultura, tech stack..."></textarea></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
@@ -593,7 +614,9 @@ function migrate(j) {
     estatus_sugerido: j.estatus_sugerido || '',
     ultima_actualizacion: j.ultima_actualizacion || new Date().toISOString(),
     fuente: j.fuente || 'app',
-    eliminado: j.eliminado === true
+    eliminado: j.eliminado === true,
+    fecha_entrevista: j.fecha_entrevista || '',
+    sugerencia_razon: j.sugerencia_razon || ''
   };
 }
 
@@ -712,6 +735,51 @@ function render() {
   renderBody();
   renderStats();
   renderColMenu();
+  renderUpcoming();
+}
+
+// ── PRÓXIMOS / GOOGLE CALENDAR ────────────────────────────────────────────
+function parseFE(s) {
+  if (!s) return null;
+  const d = new Date(String(s).replace(' ', 'T'));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function gcalUrl(j) {
+  const d = parseFE(j.fecha_entrevista);
+  if (!d) return '';
+  const p = n => String(n).padStart(2, '0');
+  const fmt = x => x.getFullYear() + p(x.getMonth()+1) + p(x.getDate()) + 'T' + p(x.getHours()) + p(x.getMinutes()) + '00';
+  const end = new Date(d.getTime() + 3600000);
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+    + '&text=' + encodeURIComponent('Entrevista — ' + j.empresa)
+    + '&dates=' + fmt(d) + '/' + fmt(end)
+    + '&details=' + encodeURIComponent(j.rol + (j.url ? '\n' + j.url : ''));
+}
+
+function renderUpcoming() {
+  const el = document.getElementById('upcoming');
+  const items = jobs
+    .filter(j => { const d = parseFE(j.fecha_entrevista); return d && d.getTime() > Date.now() - 12*3600000; })
+    .sort((a, b) => parseFE(a.fecha_entrevista) - parseFE(b.fecha_entrevista));
+  el.innerHTML = '';
+  if (!items.length) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  items.forEach(j => {
+    const d = parseFE(j.fecha_entrevista);
+    const chip = document.createElement('div');
+    chip.className = 'up-chip';
+    const txt = document.createElement('span');
+    txt.textContent = '📅 ' + d.toLocaleDateString('es-MX', { weekday:'short', day:'numeric', month:'short' })
+      + ' ' + d.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' }) + ' — ' + j.empresa;
+    txt.style.cursor = 'pointer';
+    txt.onclick = () => openModal(j.id);
+    const a = document.createElement('a');
+    a.href = gcalUrl(j); a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = 'Agendar';
+    chip.appendChild(txt); chip.appendChild(a);
+    el.appendChild(chip);
+  });
 }
 
 function visCols() { return COLUMNS.filter(c => c.visible); }
@@ -755,12 +823,30 @@ function buildCell(key, j) {
     div.style.cursor = 'pointer';
     div.innerHTML = `<div class="co">${esc(j.empresa)}</div><div class="ro">${esc(j.rol)}</div>`;
     if (j.estatus_sugerido && j.estatus_sugerido !== j.estatus) {
+      const row = document.createElement('div');
+      row.className = 'suggest-row';
       const sug = document.createElement('span');
       sug.className = 'suggest-badge';
       sug.textContent = '📬 Sugiere: ' + j.estatus_sugerido;
-      sug.title = 'Tap para aceptar la sugerencia';
+      sug.title = (j.sugerencia_razon || '') + ' — Tap para aceptar';
       sug.onclick = (e) => { e.stopPropagation(); acceptSuggestion(j.id); };
-      div.appendChild(sug);
+      row.appendChild(sug);
+      if (j.email_thread_id) {
+        const a = document.createElement('a');
+        a.className = 'mail-link';
+        a.href = 'https://mail.google.com/mail/u/0/#all/' + encodeURIComponent(j.email_thread_id);
+        a.target = '_blank'; a.rel = 'noopener';
+        a.textContent = 'ver correo ↗';
+        a.onclick = (e) => e.stopPropagation();
+        row.appendChild(a);
+      }
+      if (j.sugerencia_razon) {
+        const r = document.createElement('div');
+        r.className = 'suggest-reason';
+        r.textContent = j.sugerencia_razon;
+        row.appendChild(r);
+      }
+      div.appendChild(row);
     }
     div.onclick = () => openModal(j.id);
     frag.appendChild(div);
@@ -871,7 +957,8 @@ function createJob(empresa, rol, prioridad) {
     proximo_paso: '', notas: '', url: '', contacto: '', salario: '',
     email_thread_id: '', estatus_sugerido: '',
     ultima_actualizacion: new Date().toISOString(),
-    fuente: 'app', eliminado: false
+    fuente: 'app', eliminado: false,
+    fecha_entrevista: '', sugerencia_razon: ''
   };
   jobs.push(j);
   persist();
@@ -894,7 +981,7 @@ function update(id, field, val) {
   const j = jobs.find(x => x.id === id);
   if (!j) return;
   j[field] = val;
-  if (field === 'estatus') j.estatus_sugerido = '';
+  if (field === 'estatus') { j.estatus_sugerido = ''; j.sugerencia_razon = ''; }
   touch(j);
   persist();
   queueOp('upsert', j);
@@ -930,6 +1017,11 @@ function openModal(id) {
   document.getElementById('m-contact').value = j.contacto || '';
   document.getElementById('m-salary').value = j.salario || '';
   document.getElementById('m-notes').value = j.notas || '';
+  document.getElementById('m-interview').value = j.fecha_entrevista ? String(j.fecha_entrevista).replace(' ', 'T') : '';
+  const gcal = document.getElementById('m-gcal');
+  const gurl = gcalUrl(j);
+  if (gurl) { gcal.href = gurl; gcal.style.display = 'inline-block'; }
+  else { gcal.style.display = 'none'; }
   document.getElementById('modal').classList.add('open');
 }
 
@@ -948,6 +1040,7 @@ function saveModal() {
   j.contacto = document.getElementById('m-contact').value.trim();
   j.salario  = document.getElementById('m-salary').value;
   j.notas    = document.getElementById('m-notes').value.trim();
+  j.fecha_entrevista = document.getElementById('m-interview').value.replace('T', ' ');
   touch(j);
   persist();
   queueOp('upsert', j);
