@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#FAF7F2">
+<meta name="description" content="Job Application Tracker — Fabricio">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Job Tracker">
+<title>Job Tracker</title>
+
+<link id="manifest-link" rel="manifest">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400&family=DM+Sans:ital,wght@0,400;0,500;1,400&family=Syne:wght@500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  /* ── Paleta "Mañana despejada" ── */
+  --bg: #FAF7F2;
+  --surface: #FFFFFF;
+  --surface-2: #F3EEE6;
+  --border: #EDE7DD;
+  --text: #3D3A36;
+  --text-2: #8A8276;
+  --text-3: #B5ADA0;
+
+  --sage: #7FA88B;
+  --sage-dim: #EDF3EE;
+  --sage-text: #4F7A5C;
+  --sky: #8FB8D4;
+  --sky-dim: #EBF2F8;
+  --sky-text: #557C99;
+  --sand: #E3B587;
+  --sand-dim: #FBF3E8;
+  --sand-text: #A6754A;
+  --clay: #C99A8E;
+  --clay-dim: #F6EDEB;
+  --clay-text: #9C6A5E;
+  --lilac: #C9B8D9;
+  --lilac-dim: #F3EFF7;
+  --lilac-text: #7E6A93;
+  --fog: #D8D3CA;
+  --fog-dim: #F4F2EE;
+  --gold: #C9A227;
+
+  --shadow-sm: 0 1px 4px rgba(61,58,54,0.07);
+  --shadow-md: 0 2px 8px rgba(61,58,54,0.06);
+  --shadow-fab: 0 4px 14px rgba(127,168,139,0.4);
+  --radius: 14px;
+  --radius-sm: 9px;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --display: 'Syne', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13.5px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.shell { max-width: 1100px; margin: 0 auto; padding: 0 24px 110px; }
+
+/* ── TOP BAR ── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 28px 0 22px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+  animation: fadeDown .5s ease both;
+}
+.topbar-left { display: flex; align-items: baseline; gap: 12px; }
+.logo { font-family: var(--display); font-size: 22px; font-weight: 700; letter-spacing: -.5px; }
+.logo span { color: var(--sage); }
+.version { font-family: var(--mono); font-size: 10px; color: var(--text-3); letter-spacing: .08em; text-transform: uppercase; }
+.sync-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--fog);
+  align-self: center;
+  transition: background .3s;
+}
+.sync-dot.online { background: var(--sage); }
+.sync-dot.syncing { background: var(--sand); animation: pulse 1s infinite; }
+.sync-dot.error { background: var(--clay); }
+@keyframes pulse { 50% { opacity: .4; } }
+
+.topbar-right { display: flex; align-items: center; gap: 8px; position: relative; }
+.btn-icon {
+  background: var(--surface);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 8px 11px;
+  font-size: 15px;
+  font-family: var(--sans);
+  box-shadow: var(--shadow-sm);
+  transition: color .15s, transform .1s;
+}
+.btn-icon:hover { color: var(--text); }
+.btn-icon:active { transform: scale(.95); }
+.install-btn {
+  display: none;
+  align-items: center; gap: 6px;
+  font-family: var(--sans); font-size: 12px; font-weight: 500;
+  background: var(--sage-dim);
+  border: 1px solid var(--sage);
+  border-radius: 20px;
+  color: var(--sage-text);
+  cursor: pointer;
+  padding: 7px 14px;
+}
+.install-btn.visible { display: flex; }
+
+/* ── STATS ── */
+.stats-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 11px;
+  margin-bottom: 24px;
+  animation: fadeDown .5s .05s ease both;
+}
+.stat-card {
+  background: var(--surface);
+  border-radius: 13px;
+  padding: 15px 16px;
+  box-shadow: var(--shadow-sm);
+  border-top: 3px solid var(--accent-color, var(--sky));
+}
+.stat-card.c-sage  { --accent-color: var(--sage); }
+.stat-card.c-sand  { --accent-color: var(--sand); }
+.stat-card.c-lilac { --accent-color: var(--lilac); }
+.stat-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .09em;
+  color: var(--text-3); margin-bottom: 5px;
+}
+.stat-val { font-family: var(--display); font-size: 28px; font-weight: 700; line-height: 1; }
+
+/* ── FILTERS ── */
+.filters { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 18px; animation: fadeDown .5s .1s ease both; }
+.filter-chip {
+  font-family: var(--sans); font-size: 12px;
+  padding: 6px 14px; border-radius: 20px;
+  border: none;
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all .15s;
+}
+.filter-chip:hover { color: var(--text); }
+.filter-chip.active { background: var(--sage); color: #fff; font-weight: 500; }
+
+/* ── ADD FORM (desktop) ── */
+.add-form { display: flex; gap: 8px; margin-bottom: 18px; animation: fadeDown .5s .12s ease both; }
+.add-form input, .add-form select {
+  font-family: var(--sans); font-size: 13px;
+  background: var(--surface);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 9px 13px;
+  outline: none;
+  box-shadow: var(--shadow-sm);
+  transition: border-color .15s;
+}
+.add-form input:focus, .add-form select:focus { border-color: var(--sage); }
+.add-form input::placeholder { color: var(--text-3); }
+.add-form input.f-company { flex: 1; min-width: 120px; }
+.add-form input.f-role { flex: 2; min-width: 160px; }
+.add-form select { min-width: 100px; }
+.add-btn {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  background: var(--sage); color: #fff;
+  border: none; border-radius: var(--radius-sm);
+  padding: 9px 20px; cursor: pointer; white-space: nowrap;
+  transition: opacity .15s, transform .1s;
+}
+.add-btn:hover { opacity: .9; }
+.add-btn:active { transform: scale(.97); }
+
+/* ── TABLE ── */
+.table-wrap {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  animation: fadeDown .5s .15s ease both;
+}
+table { width: 100%; border-collapse: collapse; }
+th {
+  font-family: var(--sans); font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .09em;
+  color: var(--text-3);
+  padding: 13px 15px; text-align: left; white-space: nowrap;
+  border-bottom: 1px solid var(--surface-2);
+}
+td { padding: 14px 15px; border-bottom: 1px solid var(--surface-2); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr { transition: background .12s; }
+tbody tr:hover td { background: #FCFAF6; }
+
+.company-cell .co { font-family: var(--display); font-size: 14.5px; font-weight: 600; }
+.company-cell .ro { font-size: 12px; color: var(--text-2); margin-top: 1px; }
+.suggest-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10.5px; font-family: var(--mono);
+  color: var(--sand-text);
+  background: var(--sand-dim);
+  border-radius: 12px;
+  padding: 2px 9px;
+  margin-top: 4px;
+  cursor: pointer;
+}
+
+/* STATUS BADGE */
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 500;
+  padding: 5px 12px; border-radius: 20px; white-space: nowrap;
+  cursor: pointer;
+}
+.badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--dot, currentColor); }
+.s-applied   { background: var(--sky-dim);   color: var(--sky-text);   --dot: var(--sky); }
+.s-screening { background: var(--lilac-dim); color: var(--lilac-text); --dot: var(--lilac); }
+.s-interview { background: var(--sand-dim);  color: var(--sand-text);  --dot: var(--sand); }
+.s-offer     { background: var(--sage-dim);  color: var(--sage-text);  --dot: var(--sage); }
+.s-rejected  { background: var(--clay-dim);  color: var(--clay-text);  --dot: var(--clay); }
+.s-ghosted   { background: var(--fog-dim);   color: var(--text-3);     --dot: var(--fog); }
+
+/* PRIORITY */
+.prio { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
+.prio-icon { font-size: 12px; }
+.p-high .prio-icon { color: var(--gold); }
+.p-medium .prio-icon, .p-low .prio-icon { color: var(--text-3); }
+
+.inline-sel {
+  font-family: var(--sans); font-size: 12px;
+  background: transparent; border: none; color: inherit;
+  cursor: pointer; outline: none; padding: 0; width: 100%;
+}
+.inline-sel:focus { outline: 1px solid var(--sage); border-radius: 3px; }
+
+.editable {
+  font-family: var(--sans); font-size: 12.5px;
+  background: transparent; border: none; color: var(--text-2);
+  outline: none; width: 100%; min-width: 90px;
+}
+.editable::placeholder { color: var(--text-3); font-style: italic; }
+.editable:focus { color: var(--text); border-bottom: 1px solid var(--sage); }
+.editable.sm { min-width: 120px; }
+
+.date-text { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+
+.del-btn {
+  background: none; border: none; color: var(--text-3);
+  cursor: pointer; font-size: 14px; padding: 5px 7px; border-radius: 7px;
+  transition: color .12s, background .12s;
+}
+.del-btn:hover { color: var(--clay-text); background: var(--clay-dim); }
+
+/* ── EMPTY STATE ── */
+.empty { text-align: center; padding: 60px 20px; color: var(--text-3); }
+.empty svg { margin-bottom: 14px; opacity: .35; }
+.empty p { font-size: 13px; }
+
+/* ── FAB (mobile) ── */
+.fab {
+  display: none;
+  position: fixed;
+  right: 20px; bottom: 26px;
+  align-items: center; gap: 8px;
+  background: var(--sage); color: #fff;
+  border: none; border-radius: 26px;
+  padding: 14px 22px;
+  font-family: var(--sans); font-size: 14px; font-weight: 500;
+  box-shadow: var(--shadow-fab);
+  cursor: pointer;
+  z-index: 60;
+  transition: transform .12s;
+}
+.fab:active { transform: scale(.95); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(90px);
+  background: var(--text);
+  border-radius: var(--radius-sm);
+  color: #FAF7F2;
+  font-size: 12.5px;
+  padding: 10px 20px;
+  z-index: 999;
+  box-shadow: var(--shadow-md);
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+  white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── MODALS ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(61,58,54,0.35);
+  z-index: 100;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 40px rgba(61,58,54,0.18);
+  padding: 28px;
+  width: 430px; max-width: 92vw;
+  max-height: 88vh; overflow-y: auto;
+  animation: scaleIn .2s ease;
+}
+.modal h3 { font-family: var(--display); font-size: 16px; font-weight: 600; margin-bottom: 18px; }
+.modal-field { margin-bottom: 13px; }
+.modal-field label {
+  display: block; font-size: 10px; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--text-3); margin-bottom: 5px;
+}
+.modal-field input, .modal-field select, .modal-field textarea {
+  width: 100%;
+  font-family: var(--sans); font-size: 13px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color .15s;
+}
+.modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus { border-color: var(--sage); }
+.modal-field textarea { resize: vertical; min-height: 80px; }
+.modal-hint { font-size: 11px; color: var(--text-3); margin-top: 4px; line-height: 1.5; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+.btn-cancel {
+  font-family: var(--sans); font-size: 13px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-2); border-radius: var(--radius-sm);
+  padding: 9px 16px; cursor: pointer;
+}
+.btn-save {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  background: var(--sage); border: none; color: #fff;
+  border-radius: var(--radius-sm);
+  padding: 9px 20px; cursor: pointer;
+}
+.btn-save:hover { opacity: .9; }
+.btn-ghost {
+  font-family: var(--sans); font-size: 12px;
+  background: transparent; border: none;
+  color: var(--text-3); cursor: pointer; text-decoration: underline;
+}
+
+/* ── COLUMN MENU ── */
+.col-menu {
+  position: absolute; right: 0; top: 44px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  padding: 8px 0;
+  z-index: 50;
+  display: none;
+  min-width: 170px;
+}
+.col-menu.open { display: block; }
+.col-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 15px; cursor: pointer;
+  font-size: 12.5px; color: var(--text-2);
+}
+.col-item:hover { background: var(--bg); color: var(--text); }
+.col-item input { accent-color: var(--sage); }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes rowIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); } }
+.row-new { animation: rowIn .25s ease both; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 700px) {
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .add-form { display: none; }
+  .fab { display: inline-flex; }
+  .hide-mobile { display: none; }
+  .shell { padding: 0 14px 110px; }
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--fog); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo">Job<span>.</span>Track</div>
+      <div class="version">v2.1</div>
+      <div class="sync-dot" id="sync-dot" title="Estado de sync"></div>
+    </div>
+    <div class="topbar-right">
+      <button class="install-btn" id="install-btn" aria-label="Instalar app">⬇ Instalar app</button>
+      <button class="btn-icon" id="sync-btn" title="Sincronizar ahora" aria-label="Sincronizar">⟳</button>
+      <button class="btn-icon" id="export-btn" title="Exportar CSV" aria-label="Exportar CSV">⬇</button>
+      <button class="btn-icon" id="col-toggle" title="Columnas" aria-label="Columnas visibles">⚙</button>
+      <button class="btn-icon" id="config-btn" title="Configuración" aria-label="Configuración">☁</button>
+      <div class="col-menu" id="col-menu"></div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label">En movimiento</div><div class="stat-val" id="s-total">0</div></div>
+    <div class="stat-card c-sage"><div class="stat-label">Activas</div><div class="stat-val" id="s-active">0</div></div>
+    <div class="stat-card c-sand"><div class="stat-label">Entrevistas</div><div class="stat-val" id="s-interviews">0</div></div>
+    <div class="stat-card c-lilac"><div class="stat-label">Ofertas</div><div class="stat-val" id="s-offers">0</div></div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filters" id="filters">
+    <button class="filter-chip active" data-filter="all">Todas</button>
+    <button class="filter-chip" data-filter="Applied">Applied</button>
+    <button class="filter-chip" data-filter="Screening">Screening</button>
+    <button class="filter-chip" data-filter="Interview">Interview</button>
+    <button class="filter-chip" data-filter="Offer">Offer</button>
+    <button class="filter-chip" data-filter="Rejected">Rejected</button>
+    <button class="filter-chip" data-filter="Ghosted">Ghosted</button>
+  </div>
+
+  <!-- ADD FORM (desktop) -->
+  <div class="add-form">
+    <input id="f-company" class="f-company" placeholder="Empresa" autocomplete="off">
+    <input id="f-role" class="f-role" placeholder="Rol / Título" autocomplete="off">
+    <select id="f-priority">
+      <option value="High">Alta</option>
+      <option value="Medium" selected>Media</option>
+      <option value="Low">Baja</option>
+    </select>
+    <button class="add-btn" onclick="addJob()">+ Agregar</button>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <table id="main-table">
+      <thead><tr id="thead-row"></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="empty-state" style="display:none">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+        <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/>
+      </svg>
+      <p>Nada por aquí todavía. Tu próxima oportunidad empieza con un tap.</p>
+    </div>
+  </div>
+</div>
+
+<!-- FAB (mobile) -->
+<button class="fab" id="fab" aria-label="Agregar vacante">+ Agregar vacante</button>
+
+<!-- ADD MODAL (mobile FAB) -->
+<div class="modal-overlay" id="add-modal" role="dialog" aria-modal="true" aria-label="Nueva vacante">
+  <div class="modal">
+    <h3>Nueva vacante</h3>
+    <div class="modal-field"><label>Empresa</label><input id="am-company" autocomplete="off"></div>
+    <div class="modal-field"><label>Rol / Título</label><input id="am-role" autocomplete="off"></div>
+    <div class="modal-field"><label>Prioridad</label>
+      <select id="am-priority">
+        <option value="High">Alta</option>
+        <option value="Medium" selected>Media</option>
+        <option value="Low">Baja</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAddModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveAddModal()">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modal" role="dialog" aria-modal="true" aria-label="Detalle de vacante">
+  <div class="modal">
+    <h3 id="modal-title">Editar vacante</h3>
+    <div class="modal-field"><label>Empresa</label><input id="m-company"></div>
+    <div class="modal-field"><label>Rol</label><input id="m-role"></div>
+    <div class="modal-field"><label>URL / Link</label><input id="m-url" placeholder="https://..."></div>
+    <div class="modal-field"><label>Contacto</label><input id="m-contact" placeholder="Nombre, LinkedIn..."></div>
+    <div class="modal-field"><label>Salario esperado (MXN)</label><input id="m-salary" type="number" placeholder="0"></div>
+    <div class="modal-field"><label>Notas</label><textarea id="m-notes" placeholder="Detalles, cultura, tech stack..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveModal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIG MODAL (sync) -->
+<div class="modal-overlay" id="config-modal" role="dialog" aria-modal="true" aria-label="Configuración de sync">
+  <div class="modal">
+    <h3>Sync en la nube</h3>
+    <div class="modal-field">
+      <label>URL del Web App (Apps Script)</label>
+      <input id="c-url" placeholder="https://script.google.com/macros/s/.../exec">
+      <div class="modal-hint">Termina en /exec. La obtienes al implementar Code.gs como App web.</div>
+    </div>
+    <div class="modal-field">
+      <label>Token</label>
+      <input id="c-token" placeholder="Tu token secreto">
+      <div class="modal-hint">El mismo TOKEN que pusiste en Code.gs.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="disableSync()">Usar solo este dispositivo</button>
+      <button class="btn-save" onclick="saveConfig()">Conectar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONSTANTS ─────────────────────────────────────────────────────────────
+const STATUSES = ['Applied','Screening','Interview','Offer','Rejected','Ghosted'];
+const PRIORITIES = ['High','Medium','Low'];
+const PRIORITY_LABEL = { High:'Alta', Medium:'Media', Low:'Baja' };
+const PRIORITY_ICON = { High:'◆', Medium:'◇', Low:'·' };
+const STATUS_CLASS = {
+  Applied:'s-applied', Screening:'s-screening', Interview:'s-interview',
+  Offer:'s-offer', Rejected:'s-rejected', Ghosted:'s-ghosted'
+};
+
+const COLUMNS = [
+  { key:'company',  label:'Empresa / Rol',   visible:true,  mobile:true  },
+  { key:'status',   label:'Estatus',          visible:true,  mobile:true  },
+  { key:'priority', label:'Prioridad',        visible:true,  mobile:false },
+  { key:'date',     label:'Aplicado',         visible:true,  mobile:false },
+  { key:'next',     label:'Próximo paso',     visible:true,  mobile:false },
+  { key:'notes',    label:'Notas rápidas',    visible:true,  mobile:false },
+  { key:'salary',   label:'Salario (MXN)',    visible:false, mobile:false },
+  { key:'contact',  label:'Contacto',         visible:false, mobile:false },
+  { key:'actions',  label:'',                 visible:true,  mobile:true  },
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
+function load(key) { try { return JSON.parse(localStorage.getItem(key)); } catch(e){ return null; } }
+
+let jobs = load('jt_jobs') || [];
+let colState = load('jt_cols') || {};
+let syncConfig = load('jt_sync') || null;   // { url, token, enabled }
+let pendingOps = load('jt_pending') || [];  // [{action:'upsert'|'delete', payload}]
+let activeFilter = 'all';
+let editingId = null;
+let syncing = false;
+
+// Migración v1 → v2: ids numéricos → string, agregar campos nuevos
+jobs = jobs.map(j => migrate(j)).filter(j => !j.eliminado);
+persist();
+
+COLUMNS.forEach(c => { if (colState[c.key] !== undefined) c.visible = colState[c.key]; });
+
+function migrate(j) {
+  return {
+    id: String(j.id).startsWith('j_') ? j.id : 'j_legacy_' + j.id,
+    empresa: j.empresa || j.company || '',
+    rol: j.rol || j.role || '',
+    estatus: j.estatus || j.status || 'Applied',
+    prioridad: j.prioridad || j.priority || 'Medium',
+    fecha_aplicacion: j.fecha_aplicacion || j.date || today(),
+    proximo_paso: j.proximo_paso || j.next || '',
+    notas: j.notas || j.notes || '',
+    url: j.url || '',
+    contacto: j.contacto || j.contact || '',
+    salario: j.salario || j.salary || '',
+    email_thread_id: j.email_thread_id || '',
+    estatus_sugerido: j.estatus_sugerido || '',
+    ultima_actualizacion: j.ultima_actualizacion || new Date().toISOString(),
+    fuente: j.fuente || 'app',
+    eliminado: j.eliminado === true
+  };
+}
+
+function persist() { save('jt_jobs', jobs); }
+function persistPending() { save('jt_pending', pendingOps); }
+function newId() { return 'j_' + Date.now() + '_' + Math.floor(Math.random()*10000); }
+function touch(j) { j.ultima_actualizacion = new Date().toISOString(); }
+function today() { return new Date().toISOString().slice(0,10); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── SYNC LAYER ────────────────────────────────────────────────────────────
+function setSyncDot(state) {
+  const dot = document.getElementById('sync-dot');
+  dot.className = 'sync-dot' + (state ? ' ' + state : '');
+  dot.title = { online:'Sincronizado', syncing:'Sincronizando…', error:'Error de sync', '':'Sin sync (solo este dispositivo)' }[state || ''];
+}
+
+async function api(action, payload) {
+  // Sin headers custom → sin preflight CORS (Apps Script lo requiere así)
+  const res = await fetch(syncConfig.url, {
+    method: 'POST',
+    body: JSON.stringify({ token: syncConfig.token, action, payload })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'error_desconocido');
+  return data;
+}
+
+function queueOp(action, payload) {
+  if (!syncConfig || !syncConfig.enabled) return;
+  pendingOps.push({ action, payload });
+  persistPending();
+  scheduleFlush();
+}
+
+let flushTimer;
+function scheduleFlush() {
+  clearTimeout(flushTimer);
+  flushTimer = setTimeout(flushPending, 1500); // debounce
+}
+
+async function flushPending() {
+  if (!syncConfig || !syncConfig.enabled || !pendingOps.length || syncing) return;
+  syncing = true;
+  setSyncDot('syncing');
+  try {
+    const ops = pendingOps.slice();
+    const upserts = ops.filter(o => o.action === 'upsert').map(o => o.payload);
+    const deletes = ops.filter(o => o.action === 'delete');
+    if (upserts.length) await api('upsertBatch', { jobs: upserts });
+    for (const d of deletes) await api('delete', { id: d.payload.id });
+    pendingOps = pendingOps.slice(ops.length);
+    persistPending();
+    setSyncDot('online');
+  } catch (e) {
+    setSyncDot('error');
+  } finally {
+    syncing = false;
+    if (pendingOps.length) scheduleFlush();
+  }
+}
+
+async function pullRemote(showToast) {
+  if (!syncConfig || !syncConfig.enabled || syncing) return;
+  syncing = true;
+  setSyncDot('syncing');
+  try {
+    const data = await api('getAll', {});
+    mergeRemote(data.jobs || []);
+    setSyncDot('online');
+    if (showToast) toast('Sincronizado ✓');
+  } catch (e) {
+    setSyncDot('error');
+    if (showToast) toast('Error de sync — revisa configuración');
+  } finally {
+    syncing = false;
+  }
+}
+
+function mergeRemote(remoteJobs) {
+  const localById = {};
+  jobs.forEach(j => localById[j.id] = j);
+  let changed = false;
+
+  remoteJobs.forEach(r => {
+    r = migrate(r);
+    const l = localById[r.id];
+    if (r.eliminado) {
+      if (l) { jobs = jobs.filter(x => x.id !== r.id); changed = true; }
+      return;
+    }
+    if (!l) { jobs.push(r); changed = true; return; }
+    if (String(r.ultima_actualizacion) > String(l.ultima_actualizacion)) {
+      Object.assign(l, r);
+      changed = true;
+    }
+  });
+
+  // Jobs locales que el server no conoce → subirlos
+  const remoteIds = new Set(remoteJobs.map(r => r.id));
+  jobs.forEach(j => {
+    if (!remoteIds.has(j.id)) queueOp('upsert', j);
+  });
+
+  if (changed) { persist(); render(); }
+}
+
+async function fullSync(showToast) {
+  await flushPending();
+  await pullRemote(showToast);
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function render() {
+  renderHeader();
+  renderBody();
+  renderStats();
+  renderColMenu();
+}
+
+function visCols() { return COLUMNS.filter(c => c.visible); }
+
+function renderHeader() {
+  const tr = document.getElementById('thead-row');
+  tr.innerHTML = '';
+  visCols().forEach(col => {
+    const th = document.createElement('th');
+    th.textContent = col.label;
+    if (!col.mobile) th.classList.add('hide-mobile');
+    tr.appendChild(th);
+  });
+}
+
+function renderBody() {
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('empty-state');
+  const filtered = jobs.filter(j => activeFilter === 'all' || j.estatus === activeFilter);
+  tbody.innerHTML = '';
+  if (!filtered.length) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  filtered.forEach(j => {
+    const tr = document.createElement('tr');
+    visCols().forEach(col => {
+      const td = document.createElement('td');
+      if (!col.mobile) td.classList.add('hide-mobile');
+      td.appendChild(buildCell(col.key, j));
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function buildCell(key, j) {
+  const frag = document.createDocumentFragment();
+  if (key === 'company') {
+    const div = document.createElement('div');
+    div.className = 'company-cell';
+    div.style.cursor = 'pointer';
+    div.innerHTML = `<div class="co">${esc(j.empresa)}</div><div class="ro">${esc(j.rol)}</div>`;
+    if (j.estatus_sugerido && j.estatus_sugerido !== j.estatus) {
+      const sug = document.createElement('span');
+      sug.className = 'suggest-badge';
+      sug.textContent = '📬 Sugiere: ' + j.estatus_sugerido;
+      sug.title = 'Tap para aceptar la sugerencia';
+      sug.onclick = (e) => { e.stopPropagation(); acceptSuggestion(j.id); };
+      div.appendChild(sug);
+    }
+    div.onclick = () => openModal(j.id);
+    frag.appendChild(div);
+  } else if (key === 'status') {
+    const wrap = document.createElement('div');
+    const badge = document.createElement('span');
+    badge.className = 'badge ' + (STATUS_CLASS[j.estatus] || '');
+    badge.textContent = j.estatus;
+    const sel = document.createElement('select');
+    sel.className = 'inline-sel';
+    sel.style.cssText = 'display:none;font-size:11px';
+    STATUSES.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      if (s === j.estatus) o.selected = true;
+      sel.appendChild(o);
+    });
+    badge.onclick = () => { badge.style.display='none'; sel.style.display='block'; sel.focus(); };
+    sel.onchange = () => update(j.id, 'estatus', sel.value);
+    sel.onblur = () => { badge.style.display='inline-flex'; sel.style.display='none'; };
+    wrap.appendChild(badge); wrap.appendChild(sel);
+    frag.appendChild(wrap);
+  } else if (key === 'priority') {
+    const wrap = document.createElement('div');
+    wrap.className = 'prio p-' + j.prioridad.toLowerCase();
+    const ic = document.createElement('span');
+    ic.className = 'prio-icon';
+    ic.textContent = PRIORITY_ICON[j.prioridad] || '·';
+    const sel = document.createElement('select');
+    sel.className = 'inline-sel';
+    PRIORITIES.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p; o.textContent = PRIORITY_LABEL[p];
+      if (p === j.prioridad) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.onchange = () => update(j.id, 'prioridad', sel.value);
+    wrap.appendChild(ic); wrap.appendChild(sel);
+    frag.appendChild(wrap);
+  } else if (key === 'date') {
+    const s = document.createElement('span');
+    s.className = 'date-text';
+    s.textContent = j.fecha_aplicacion || '—';
+    frag.appendChild(s);
+  } else if (key === 'next' || key === 'notes') {
+    const field = key === 'next' ? 'proximo_paso' : 'notas';
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'editable sm';
+    inp.value = j[field] || '';
+    inp.placeholder = key === 'next' ? 'Próximo paso...' : 'Nota rápida...';
+    inp.onchange = () => update(j.id, field, inp.value);
+    frag.appendChild(inp);
+  } else if (key === 'salary') {
+    const s = document.createElement('span');
+    s.className = 'date-text';
+    s.textContent = j.salario ? '$' + Number(j.salario).toLocaleString('es-MX') : '—';
+    frag.appendChild(s);
+  } else if (key === 'contact') {
+    const s = document.createElement('span');
+    s.className = 'date-text';
+    s.textContent = j.contacto || '—';
+    frag.appendChild(s);
+  } else if (key === 'actions') {
+    const btn = document.createElement('button');
+    btn.className = 'del-btn';
+    btn.setAttribute('aria-label', 'Eliminar vacante');
+    btn.textContent = '✕';
+    btn.onclick = () => deleteJob(j.id);
+    frag.appendChild(btn);
+  }
+  return frag;
+}
+
+function renderStats() {
+  document.getElementById('s-total').textContent = jobs.length;
+  document.getElementById('s-active').textContent = jobs.filter(j=>!['Rejected','Ghosted'].includes(j.estatus)).length;
+  document.getElementById('s-interviews').textContent = jobs.filter(j=>j.estatus==='Interview').length;
+  document.getElementById('s-offers').textContent = jobs.filter(j=>j.estatus==='Offer').length;
+}
+
+function renderColMenu() {
+  const menu = document.getElementById('col-menu');
+  menu.innerHTML = '';
+  COLUMNS.filter(c => c.key !== 'actions').forEach(col => {
+    const item = document.createElement('label');
+    item.className = 'col-item';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = col.visible;
+    cb.onchange = () => {
+      col.visible = cb.checked;
+      colState[col.key] = cb.checked;
+      save('jt_cols', colState);
+      render();
+    };
+    item.appendChild(cb);
+    item.appendChild(document.createTextNode(col.label));
+    menu.appendChild(item);
+  });
+}
+
+// ── CRUD ──────────────────────────────────────────────────────────────────
+function createJob(empresa, rol, prioridad) {
+  const j = {
+    id: newId(), empresa, rol,
+    estatus: 'Applied', prioridad,
+    fecha_aplicacion: today(),
+    proximo_paso: '', notas: '', url: '', contacto: '', salario: '',
+    email_thread_id: '', estatus_sugerido: '',
+    ultima_actualizacion: new Date().toISOString(),
+    fuente: 'app', eliminado: false
+  };
+  jobs.push(j);
+  persist();
+  queueOp('upsert', j);
+  render();
+  toast('Vacante agregada ✓');
+}
+
+function addJob() {
+  const empresa = document.getElementById('f-company').value.trim();
+  const rol = document.getElementById('f-role').value.trim();
+  const prioridad = document.getElementById('f-priority').value;
+  if (!empresa || !rol) { toast('Completa empresa y rol'); return; }
+  createJob(empresa, rol, prioridad);
+  document.getElementById('f-company').value = '';
+  document.getElementById('f-role').value = '';
+}
+
+function update(id, field, val) {
+  const j = jobs.find(x => x.id === id);
+  if (!j) return;
+  j[field] = val;
+  if (field === 'estatus') j.estatus_sugerido = '';
+  touch(j);
+  persist();
+  queueOp('upsert', j);
+  renderStats();
+  renderBody();
+}
+
+function acceptSuggestion(id) {
+  const j = jobs.find(x => x.id === id);
+  if (!j || !j.estatus_sugerido) return;
+  update(id, 'estatus', j.estatus_sugerido);
+  toast('Estatus actualizado ✓');
+}
+
+function deleteJob(id) {
+  if (!confirm('¿Eliminar esta vacante?')) return;
+  jobs = jobs.filter(x => x.id !== id);
+  persist();
+  queueOp('delete', { id });
+  render();
+  toast('Eliminada');
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────
+function openModal(id) {
+  const j = jobs.find(x => x.id === id);
+  if (!j) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = j.empresa + ' — ' + j.rol;
+  document.getElementById('m-company').value = j.empresa || '';
+  document.getElementById('m-role').value = j.rol || '';
+  document.getElementById('m-url').value = j.url || '';
+  document.getElementById('m-contact').value = j.contacto || '';
+  document.getElementById('m-salary').value = j.salario || '';
+  document.getElementById('m-notes').value = j.notas || '';
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  editingId = null;
+}
+
+function saveModal() {
+  if (!editingId) return;
+  const j = jobs.find(x => x.id === editingId);
+  if (!j) return;
+  j.empresa  = document.getElementById('m-company').value.trim() || j.empresa;
+  j.rol      = document.getElementById('m-role').value.trim() || j.rol;
+  j.url      = document.getElementById('m-url').value.trim();
+  j.contacto = document.getElementById('m-contact').value.trim();
+  j.salario  = document.getElementById('m-salary').value;
+  j.notas    = document.getElementById('m-notes').value.trim();
+  touch(j);
+  persist();
+  queueOp('upsert', j);
+  closeModal();
+  render();
+  toast('Guardado ✓');
+}
+
+function openAddModal() { document.getElementById('add-modal').classList.add('open'); }
+function closeAddModal() { document.getElementById('add-modal').classList.remove('open'); }
+function saveAddModal() {
+  const empresa = document.getElementById('am-company').value.trim();
+  const rol = document.getElementById('am-role').value.trim();
+  const prioridad = document.getElementById('am-priority').value;
+  if (!empresa || !rol) { toast('Completa empresa y rol'); return; }
+  createJob(empresa, rol, prioridad);
+  document.getElementById('am-company').value = '';
+  document.getElementById('am-role').value = '';
+  closeAddModal();
+}
+
+// ── CONFIG (sync) ─────────────────────────────────────────────────────────
+function openConfig() {
+  document.getElementById('c-url').value = (syncConfig && syncConfig.url) || '';
+  document.getElementById('c-token').value = (syncConfig && syncConfig.token) || '';
+  document.getElementById('config-modal').classList.add('open');
+}
+function closeConfig() { document.getElementById('config-modal').classList.remove('open'); }
+
+function saveConfig() {
+  const url = document.getElementById('c-url').value.trim();
+  const token = document.getElementById('c-token').value.trim();
+  if (!url || !token) { toast('Completa URL y token'); return; }
+  if (!url.endsWith('/exec')) { toast('La URL debe terminar en /exec'); return; }
+  syncConfig = { url, token, enabled: true };
+  save('jt_sync', syncConfig);
+  closeConfig();
+  toast('Conectando…');
+  fullSync(true);
+}
+
+function disableSync() {
+  syncConfig = { url:'', token:'', enabled: false };
+  save('jt_sync', syncConfig);
+  setSyncDot('');
+  closeConfig();
+  toast('Modo local activado');
+}
+
+// ── GLOBAL LISTENERS ──────────────────────────────────────────────────────
+document.getElementById('fab').addEventListener('click', openAddModal);
+document.getElementById('config-btn').addEventListener('click', openConfig);
+document.getElementById('sync-btn').addEventListener('click', () => {
+  if (!syncConfig || !syncConfig.enabled) { openConfig(); return; }
+  fullSync(true);
+});
+
+['modal','add-modal','config-modal'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closeAddModal(); closeConfig(); }
+});
+
+document.getElementById('filters').addEventListener('click', e => {
+  if (!e.target.classList.contains('filter-chip')) return;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  e.target.classList.add('active');
+  activeFilter = e.target.dataset.filter;
+  renderBody();
+});
+
+document.getElementById('col-toggle').addEventListener('click', e => {
+  e.stopPropagation();
+  document.getElementById('col-menu').classList.toggle('open');
+});
+document.addEventListener('click', () => document.getElementById('col-menu').classList.remove('open'));
+
+// ── EXPORT CSV ────────────────────────────────────────────────────────────
+document.getElementById('export-btn').addEventListener('click', () => {
+  const headers = ['ID','Empresa','Rol','Estatus','Prioridad','Fecha','Próximo Paso','Notas','URL','Contacto','Salario'];
+  const rows = jobs.map(j => [j.id,j.empresa,j.rol,j.estatus,j.prioridad,j.fecha_aplicacion,j.proximo_paso,j.notas,j.url,j.contacto,j.salario]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='job-tracker.csv'; a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV exportado ✓');
+});
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── KEYBOARD SHORTCUTS ────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    document.getElementById('f-company').focus();
+  }
+});
+
+// ── PWA MANIFEST ──────────────────────────────────────────────────────────
+const manifest = {
+  name: 'Job Tracker',
+  short_name: 'JobTrack',
+  description: 'Seguimiento de vacantes de trabajo',
+  start_url: './',
+  display: 'standalone',
+  background_color: '#FAF7F2',
+  theme_color: '#FAF7F2',
+  icons: [
+    { src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FAF7F2'/><circle cx='50' cy='50' r='30' fill='%237FA88B'/><text y='62' x='50' text-anchor='middle' font-size='34' fill='white' font-family='sans-serif'>J</text></svg>", sizes: '192x192', type: 'image/svg+xml' },
+    { src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FAF7F2'/><circle cx='50' cy='50' r='30' fill='%237FA88B'/><text y='62' x='50' text-anchor='middle' font-size='34' fill='white' font-family='sans-serif'>J</text></svg>", sizes: '512x512', type: 'image/svg+xml' }
+  ]
+};
+const mBlob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+document.getElementById('manifest-link').href = URL.createObjectURL(mBlob);
+
+// ── SERVICE WORKER (archivo real, no blob — fix iOS) ─────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+// ── INSTALL PROMPT ────────────────────────────────────────────────────────
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-btn').classList.add('visible');
+});
+document.getElementById('install-btn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') { document.getElementById('install-btn').classList.remove('visible'); toast('App instalada ✓'); }
+  deferredPrompt = null;
+});
+
+// ── DEEP LINK (Fase 2): ?add=Empresa|Rol|Prioridad ───────────────────────
+(function handleDeepLink() {
+  const params = new URLSearchParams(location.search);
+  const raw = params.get('add');
+  if (!raw) return;
+  const parts = raw.split('|');
+  const empresa = (parts[0] || '').trim();
+  const rol = (parts[1] || '').trim();
+  const prioridad = PRIORITIES.includes(parts[2]) ? parts[2] : 'Medium';
+  history.replaceState(null, '', location.pathname); // limpiar URL
+  if (empresa && rol) {
+    const dup = jobs.find(j => j.empresa.toLowerCase() === empresa.toLowerCase() && j.rol.toLowerCase() === rol.toLowerCase());
+    if (dup) { toast('Ya existe: ' + empresa); return; }
+    createJob(empresa, rol, prioridad);
+  }
+})();
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+render();
+if (syncConfig && syncConfig.enabled) {
+  setSyncDot('online');
+  fullSync(false);
+  setInterval(() => fullSync(false), 5 * 60 * 1000); // pull cada 5 min
+  window.addEventListener('online', () => fullSync(false));
+} else if (syncConfig === null) {
+  // Primera vez: ofrecer configurar sync (se puede saltar)
+  setSyncDot('');
+  setTimeout(openConfig, 600);
+} else {
+  setSyncDot('');
+}
+</script>
+</body>
+</html>
