@@ -209,7 +209,14 @@ tbody tr:hover td { background: #FCFAF6; }
 
 .company-cell .co { font-family: var(--display); font-size: 14.5px; font-weight: 600; }
 .company-cell .ro { font-size: 12px; color: var(--text-2); margin-top: 1px; }
-.suggest-row { margin-top: 4px; }
+.suggest-row { margin-top: 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.discard-btn {
+  background: none; border: none; color: var(--text-3);
+  cursor: pointer; font-size: 11px; padding: 2px 6px;
+  border-radius: 8px; line-height: 1;
+  transition: color .12s, background .12s;
+}
+.discard-btn:hover { color: var(--clay-text); background: var(--clay-dim); }
 .suggest-badge {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 10.5px; font-family: var(--mono);
@@ -425,7 +432,7 @@ tbody tr:hover td { background: #FCFAF6; }
   <div class="topbar">
     <div class="topbar-left">
       <div class="logo">Job<span>.</span>Track</div>
-      <div class="version">v2.2</div>
+      <div class="version">v2.3</div>
       <div class="sync-dot" id="sync-dot" title="Estado de sync"></div>
     </div>
     <div class="topbar-right">
@@ -616,7 +623,8 @@ function migrate(j) {
     fuente: j.fuente || 'app',
     eliminado: j.eliminado === true,
     fecha_entrevista: j.fecha_entrevista || '',
-    sugerencia_razon: j.sugerencia_razon || ''
+    sugerencia_razon: j.sugerencia_razon || '',
+    descartes: j.descartes || '{}'
   };
 }
 
@@ -825,12 +833,23 @@ function buildCell(key, j) {
     if (j.estatus_sugerido && j.estatus_sugerido !== j.estatus) {
       const row = document.createElement('div');
       row.className = 'suggest-row';
+
       const sug = document.createElement('span');
       sug.className = 'suggest-badge';
       sug.textContent = '📬 Sugiere: ' + j.estatus_sugerido;
       sug.title = (j.sugerencia_razon || '') + ' — Tap para aceptar';
       sug.onclick = (e) => { e.stopPropagation(); acceptSuggestion(j.id); };
+
+      const disc = document.createElement('button');
+      disc.className = 'discard-btn';
+      disc.title = 'Descartar sugerencia';
+      disc.setAttribute('aria-label', 'Descartar sugerencia');
+      disc.textContent = '✕';
+      disc.onclick = (e) => { e.stopPropagation(); discardSuggestion(j.id); };
+
       row.appendChild(sug);
+      row.appendChild(disc);
+
       if (j.email_thread_id) {
         const a = document.createElement('a');
         a.className = 'mail-link';
@@ -840,12 +859,14 @@ function buildCell(key, j) {
         a.onclick = (e) => e.stopPropagation();
         row.appendChild(a);
       }
+
       if (j.sugerencia_razon) {
         const r = document.createElement('div');
         r.className = 'suggest-reason';
         r.textContent = j.sugerencia_razon;
         row.appendChild(r);
       }
+
       div.appendChild(row);
     }
     div.onclick = () => openModal(j.id);
@@ -958,7 +979,7 @@ function createJob(empresa, rol, prioridad) {
     email_thread_id: '', estatus_sugerido: '',
     ultima_actualizacion: new Date().toISOString(),
     fuente: 'app', eliminado: false,
-    fecha_entrevista: '', sugerencia_razon: ''
+    fecha_entrevista: '', sugerencia_razon: '', descartes: '{}'
   };
   jobs.push(j);
   persist();
@@ -994,6 +1015,23 @@ function acceptSuggestion(id) {
   if (!j || !j.estatus_sugerido) return;
   update(id, 'estatus', j.estatus_sugerido);
   toast('Estatus actualizado ✓');
+}
+
+function discardSuggestion(id) {
+  const j = jobs.find(x => x.id === id);
+  if (!j || !j.estatus_sugerido) return;
+  // Guardar en descartes para que el backend lo respete
+  let d = {};
+  try { d = JSON.parse(j.descartes || '{}'); } catch(e) {}
+  d[j.estatus_sugerido] = Date.now();
+  j.descartes = JSON.stringify(d);
+  j.estatus_sugerido = '';
+  j.sugerencia_razon = '';
+  touch(j);
+  persist();
+  queueOp('upsert', j);
+  renderBody();
+  toast('Sugerencia descartada');
 }
 
 function deleteJob(id) {
