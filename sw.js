@@ -1,6 +1,6 @@
 // Job Tracker — Service Worker v2
 // Incrementa CACHE al publicar cambios para forzar refresh en iOS PWA
-const CACHE = 'jt-v2.2.0';
+const CACHE = 'jt-v2.3.0';
 
 self.addEventListener('install', e => {
   e.waitUntil(
